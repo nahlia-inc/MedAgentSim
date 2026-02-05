@@ -35,10 +35,10 @@ logger.setLevel(logging.INFO)
 class BAgent:
     def __init__(
         self,
-        model_name="meta-llama/Llama-3.3-70B-Instruct",
-        server_url="http://localhost:8012/v1/chat/completions",
+        model_name=None,
+        server_url=None,
         ollama_url="http://localhost:11434",
-        ollama_model="llama3.3:70b"
+        ollama_model="qwen2:7b"
     ):
         """
         Initializes the BAgent:
@@ -52,6 +52,23 @@ class BAgent:
             ollama_url: Ollama server URL (default: http://localhost:11434)
             ollama_model: Ollama model name (default: llama3.1)
         """
+        # --- vLLM configuration via env vars ---
+        # Expected:
+        #   VLLM_BASE_URL like: https://vllm-dev.nahlia.com/v1
+        #   VLLM_API_KEY  like: <token>
+        #   VLLM_MODEL_NAME like: Qwen/Qwen3-4B-Instruct-2507
+        vllm_base = os.environ.get("VLLM_BASE_URL", "http://localhost:8012/v1").rstrip("/")
+        self.vllm_api_key = os.environ.get("VLLM_API_KEY")
+        if not self.vllm_api_key or str(self.vllm_api_key).strip() == "YOUR_KEY_HERE":
+            logger.warning("VLLM_API_KEY is not set (or is a placeholder). /v1 endpoints may return 401.")
+
+        if server_url is None:
+            # OpenAI-compatible vLLM chat endpoint
+            server_url = f"{vllm_base}/chat/completions"
+
+        if model_name is None:
+            model_name = os.environ.get("VLLM_MODEL_NAME", "Qwen/Qwen3-4B-Instruct-2507")
+
         self.server_url = server_url
         self.model_name = model_name
         self.ollama_url = ollama_url
@@ -76,10 +93,45 @@ class BAgent:
     def _check_vllm_server(self):
         """Checks if the vLLM server is running."""
         try:
-            response = requests.get(self.server_url.replace("/v1/chat/completions", "/health"), timeout=2)
+            # Derive health URL from server_url.
+            # Works for URLs like:
+            #   https://host/v1/chat/completions  -> https://host/health
+            #   https://host/v1                 -> https://host/health
+            #   http://localhost:8012/v1/chat/completions -> http://localhost:8012/health
+            url = self.server_url
+            if "/v1" in url:
+                base = url.split("/v1", 1)[0]
+            else:
+                # Fallback: drop any path and just use scheme://host:port
+                parts = url.split("//", 1)
+                if len(parts) == 2:
+                    scheme, rest = parts[0], parts[1]
+                    host = rest.split("/", 1)[0]
+                    base = f"{scheme}//{host}"
+                else:
+                    base = url
+
+            health_url = f"{base}/health"
+
+            headers = self._auth_headers()
+
+            response = requests.get(health_url, headers=headers, timeout=2)
             return response.status_code == 200
         except requests.RequestException:
             return False
+
+    def _auth_headers(self) -> dict:
+        """
+        Returns the correct auth header for vLLM requests, reading env vars for header name/prefix.
+        Returns {} if API key is missing or placeholder.
+        """
+        header_name = os.environ.get("VLLM_API_KEY_HEADER", "Authorization")
+        prefix = os.environ.get("VLLM_API_KEY_PREFIX", "Bearer ")
+        api_key = getattr(self, "vllm_api_key", None)
+        # Common placeholder check (case-insensitive)
+        if not api_key or str(api_key).strip() in {"", "YOUR_KEY_HERE"}:
+            return {}
+        return {header_name: f"{prefix}{api_key}"}
 
     def _check_ollama_server(self):
         """Checks if the Ollama server is running."""
@@ -180,7 +232,7 @@ class BAgent:
             "max_tokens": 200 # Control response length
         }
 
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json", **self._auth_headers()}
 
         for attempt in range(tries):
             try:
@@ -193,6 +245,13 @@ class BAgent:
 
                 # Return the generated response
                 return response_data["choices"][0]["message"]["content"].strip()
+            except requests.exceptions.HTTPError as e:
+                # For HTTPError, check for 401
+                response = getattr(e, 'response', None)
+                if response is not None and response.status_code == 401:
+                    logger.warning("vLLM returned 401 Unauthorized. Check VLLM_API_KEY and header (VLLM_API_KEY_HEADER/VLLM_API_KEY_PREFIX).")
+                logger.warning(f"Server query attempt {attempt + 1} failed: {e}")
+                time.sleep(timeout)
             except requests.exceptions.RequestException as e:
                 logger.warning(f"Server query attempt {attempt + 1} failed: {e}")
                 time.sleep(timeout)
@@ -250,7 +309,7 @@ class BAgent:
             "max_tokens": 80  # Control response length
         }
 
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json", **self._auth_headers()}
 
         for attempt in range(tries):
             try:
@@ -269,7 +328,7 @@ class BAgent:
 
         logger.error("Max retries exceeded: Unable to fetch response from server.")
         return "Error: Failed to fetch response from server."
-    
+
     def query_model_with_ensembling(
         self,
         prompt,
@@ -340,7 +399,13 @@ class BAgent:
         response_counts = {response: responses.count(response) for response in responses}
         return max(response_counts, key=response_counts.get)
 
-fallback_agent = BAgent()
+_fallback_agent = None
+
+def get_fallback_agent():
+    global _fallback_agent
+    if _fallback_agent is None:
+        _fallback_agent = BAgent()
+    return _fallback_agent
 
 def query_model(model_str: str,
                 prompt: str,
@@ -531,7 +596,7 @@ def query_model(model_str: str,
 
             else:
                 # Fallback to the baseline agent if none of the above match.
-                answer = fallback_agent.query_model(prompt, system_prompt)
+                answer = get_fallback_agent().query_model(prompt, system_prompt)
 
             return answer
 
@@ -604,7 +669,7 @@ def extract_bracket_content(s: str):
 
 def clean_diagnosis(message):
     message = extract_bracket_content(message)
-    
+
     message = message.replace("'", "")
     message = message.replace('"', '')
     message = message.replace("```python", "")
@@ -618,7 +683,7 @@ def clean_diagnosis(message):
         formatted_str = formatted_str.replace(".,", '.", "')
     else:
         formatted_str = formatted_str.replace(",", '", "')
-    
+
     diagnosis_list = eval(formatted_str)
     diagnosis_list = [dia.strip() for dia in diagnosis_list]
     return diagnosis_list
@@ -822,7 +887,7 @@ def extract_question(patient_statement, agent_hist, parsed_responses, backend):
     response = query_model(backend, prompt, system_prompt) # maybe do some cleaning too
 
     return response
-    
+
 
     raise Exception("Max retries exceeded: timeout")
 # Example Usage

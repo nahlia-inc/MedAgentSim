@@ -1,4 +1,4 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: magent
 Version: 0.1.0
 Summary: MedAgentSim: Self-Evolving Multi-Agent Simulations for Realistic Clinical Interactions
@@ -11,11 +11,10 @@ Requires-Dist: tqdm
 Requires-Dist: openai
 Requires-Dist: python-liquid
 Requires-Dist: GitPython
-Requires-Dist: torch
 Requires-Dist: scikit-learn
-Requires-Dist: vLLM
 Dynamic: author
 Dynamic: home-page
+Dynamic: license-file
 Dynamic: requires-dist
 Dynamic: requires-python
 Dynamic: summary

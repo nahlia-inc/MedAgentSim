@@ -21,5 +21,5 @@ language_models:
 scenario:
   dataset: "MedQA"  # Options: MedQA, MedQA_Ext, NEJM, NEJM_Ext, MIMICIV
   image_request: false
-  num_scenarios: null  # Set to a specific integer or null for default
+  num_scenarios: 10  # Set to a specific integer or null for default
   total_inferences: 20

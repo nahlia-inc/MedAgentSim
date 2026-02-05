@@ -1,12 +1,12 @@
 [
     {
         "id": 1,
-        "question": "Provide the most likely final diagnosis for the following patient. A newborn presents with a few days of an erythematous maculopapular rash with pustules on the trunk and extremities, sparing the palms and soles, associated with mild fussiness but no other significant symptoms such as fever, sneezing, or runny nose. The symptoms have been relatively stable since onset, without clear triggers for worsening or improvement. Laboratory results show normal complete blood count, blood culture, stool culture, urine culture, viral panel, immunoglobulin levels, and biopsy. Imaging, including chest X-ray, revealed no abnormalities. Given the comprehensive testing with normal results and the characteristic presentation of the rash, what is the final diagnosis for this patient?",
+        "question": "Provide the most likely final diagnosis for the following patient. A 30-year-old woman presents with 6 weeks of knee pain, associated with swelling and occasional clicking noises when walking or climbing stairs. The symptoms worsened after running, improved with rest, but recurred after increased physical activity. Laboratory results show elevated C-reactive protein (CRP) levels but normal uric acid levels. Imaging revealed patellar tendinopathy without significant structural damage to the knee joint. What is the final diagnosis for this patient?\n\nThe final diagnosis for this patient is patellar tendinitis due to overuse, based on her symptoms that worsen with physical activity and improve with rest, along with imaging findings of patellar tendinopathy and elevated C-reactive protein levels which indicate mild inflammation.\n\nIn response to your message about the doctor discussion:\n\nDoctor 1 believes it's a likely case of patellar tendinitis or meniscal tears due to overuse based on symptoms like pain triggered by specific movements",
         "answer_choices": {
-            "A": "Erythema toxicum neonatorum (ETN)",
-            "B": "Neonatal acne",
-            "C": "Infectious cause (ruled out due to normal test results)",
-            "D": "Transient neonatal pustular melanosis (TNPM)"
+            "A": "Gout",
+            "B": "Patellar Tendinitis due to overuse",
+            "C": "Meniscal Tear due to overuse",
+            "D": "Acute Overuse Syndrome"
         },
         "correct_answer": null
     }

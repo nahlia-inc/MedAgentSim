@@ -5,12 +5,19 @@ body,
   padding: 0;
 }
 
+/*#game-container {*/
+/*  !*min-width: 100vw;*/
+/*  min-height: 100vh;*!*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*  justify-content: center;*/
+/*}*/
+
 #game-container {
-  /*min-width: 100vw;
-  min-height: 100vh;*/
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100vw;
+  height: 80vh;     /* or 100vh if you want full-screen */
+  overflow: visible; /* no scrollbars */
+  display: block;   /* remove flex centering for Phaser */
 }
 
 #game-container>canvas {
