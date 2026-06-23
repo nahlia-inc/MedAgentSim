@@ -75,7 +75,7 @@ pip check
 <a href="https://www.python.org/downloads/">
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" height="25">
 </a>
-<a href="https://huggingface.co/ItsMaxNorm/MedAgentSim-datasets">
+<a href="https://huggingface.co/datasets/ItsMaxNorm/MedAgentSim-datasets">
   <img src="https://img.shields.io/badge/HuggingFace-Datasets-orange" height="25">
 </a>
 
@@ -217,6 +217,20 @@ MedAgentSim/
 └── README.md
 ```
 
+## Datasets
+```bash
+from datasets import load_dataset
+
+# Load all files
+ds = load_dataset("ItsMaxNorm/MedAgentSim-datasets")
+
+# Load a specific file
+ds = load_dataset("ItsMaxNorm/MedAgentSim-datasets", data_files="medqa_v1.parquet")
+
+# Access the data
+print(ds["train"][0])
+```
+
 ## 👥 Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -241,5 +255,5 @@ Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-N
 Thanks to AgentClinic, Microsoft PromptBase, Generative Agents, and MBZUAI for support.
 
 ---
-
-Made with ❤️ by the MedAgentSim Team
+## Star History Chart
+[![Star History Chart](https://api.star-history.com/svg?repos=MAXNORM8650/MedAgentSim&type=date&legend=top-left)](https://www.star-history.com/#MAXNORM8650/MedAgentSim&type=date&legend=top-left)
